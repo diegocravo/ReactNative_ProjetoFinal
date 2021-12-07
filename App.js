@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -7,26 +7,112 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
+  Keyboard,
 } from 'react-native';
 import Login from './src/components/Login';
 import TaskList from './src/components/TaskList';
-
-let tasks = [
-  {key: '1', nome: 'Comprar coca cola'},
-  {key: '2', nome: 'Estudar Javascript'},
-];
+import firebase from './src/services/firebaseConnection';
 
 export default function App() {
   const [user, setUser] = useState(null);
-
   const [newTask, setNewTask] = useState('');
+  const [tasks, setTasks] = useState([]);
+  const [key, setKey] = useState('');
+
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    function getUser() {
+      if (!user) {
+        return;
+      }
+
+      firebase
+        .database()
+        .ref('tarefas')
+        .child(user)
+        .once('value', snapshot => {
+          setTasks([]);
+
+          snapshot?.forEach(childItem => {
+            let data = {
+              key: childItem.key,
+              nome: childItem.val().nome,
+            };
+
+            setTasks(oldTasks => [...oldTasks, data]);
+          });
+        });
+    }
+    getUser();
+  }, [user]);
+
+  function handleAdd() {
+    if (newTask === '') {
+      return;
+    }
+
+    // Usuário quer editar uma tarefa
+    if (key !== '') {
+      firebase
+        .database()
+        .ref('tarefas')
+        .child(user)
+        .child(key)
+        .update({
+          nome: newTask,
+        })
+        .then(() => {
+          const taskIndex = tasks.findIndex(item => item.key === key);
+          let taskClone = tasks;
+          taskClone[taskIndex].nome = newTask;
+
+          setTasks([...taskClone]);
+        });
+
+      Keyboard.dismiss();
+      setNewTask('');
+      setKey('');
+      return;
+    }
+
+    let tarefas = firebase.database().ref('tarefas').child(user);
+    let chave = tarefas.push().key;
+
+    tarefas
+      .child(chave)
+      .set({
+        nome: newTask,
+      })
+      .then(() => {
+        const data = {
+          key: chave,
+          nome: newTask,
+        };
+        setTasks(oldTasks => [...oldTasks, data]);
+      });
+
+    Keyboard.dismiss();
+    setNewTask('');
+  }
 
   function handleDelete(key) {
-    alert(key);
+    firebase
+      .database()
+      .ref('tarefas')
+      .child(user)
+      .child(key)
+      .remove()
+      .then(() => {
+        const findTasks = tasks.filter(item => item.key !== key);
+        setTasks(findTasks);
+      });
   }
 
   function handleEdit(data) {
-    alert(data);
+    setKey(data.key);
+    setNewTask(data.nome);
+    inputRef.current.focus();
   }
 
   if (!user) {
@@ -41,8 +127,9 @@ export default function App() {
           placeholder="O que você vai fazer hoje?"
           value={newTask}
           onChangeText={text => setNewTask(text)}
+          ref={inputRef}
         />
-        <TouchableOpacity style={styles.buttonAdd}>
+        <TouchableOpacity style={styles.buttonAdd} onPress={handleAdd}>
           <Text style={styles.buttonText}>+</Text>
         </TouchableOpacity>
       </View>
@@ -79,11 +166,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#141414',
+    borderColor: '#123',
     height: 45,
   },
   buttonAdd: {
-    backgroundColor: '#141414',
+    backgroundColor: '#123',
     height: 45,
     alignItems: 'center',
     justifyContent: 'center',
