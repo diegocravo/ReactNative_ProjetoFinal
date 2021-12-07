@@ -65,7 +65,7 @@ export default function Login({changeStatus}) {
       <TouchableOpacity
         style={[
           styles.handleLogin,
-          {backgroundColor: type === 'login' ? '#3ea6f2' : '#141414'},
+          {backgroundColor: type === 'login' ? '#3ea6f2' : '#123'},
         ]}
         onPress={handleLogin}>
         <Text style={styles.loginText}>
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     height: 45,
     padding: 10,
     borderWidth: 1,
-    borderColor: '#141414',
+    borderColor: '#123',
   },
   handleLogin: {
     alignItems: 'center',

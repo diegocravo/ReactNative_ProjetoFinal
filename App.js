@@ -8,9 +8,11 @@ import {
   TouchableOpacity,
   FlatList,
   Keyboard,
+  Image,
 } from 'react-native';
 import Login from './src/components/Login';
 import TaskList from './src/components/TaskList';
+import Menu from './src/components/Menu';
 import firebase from './src/services/firebaseConnection';
 
 export default function App() {
@@ -115,12 +117,40 @@ export default function App() {
     inputRef.current.focus();
   }
 
+  function cancelEdit() {
+    setKey('');
+    setNewTask('');
+    Keyboard.dismiss();
+  }
+
+  function handleLogout() {
+    setUser(null);
+    setNewTask('');
+    setTasks([]);
+    setKey('');
+  }
+
   if (!user) {
     return <Login changeStatus={user => setUser(user)} />;
   }
 
   return (
     <SafeAreaView style={styles.container}>
+      <Menu logout={handleLogout} />
+      {key.length > 0 && (
+        <View style={{flexDirection: 'row', marginBottom: 8}}>
+          <TouchableOpacity onPress={cancelEdit}>
+            <Image
+              source={require('./src/img/cancel.png')}
+              style={styles.cancelImg}
+            />
+          </TouchableOpacity>
+          <Text style={{marginLeft: 5, color: '#ff0000'}}>
+            Você está editando uma tarefa!
+          </Text>
+        </View>
+      )}
+
       <View style={styles.containerTask}>
         <TextInput
           style={styles.input}
@@ -181,5 +211,9 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 22,
+  },
+  cancelImg: {
+    height: 20,
+    width: 20,
   },
 });
